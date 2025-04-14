@@ -1,4 +1,14 @@
+import process from "node:process";
+
 import { Timer } from "./core/timer";
+
+const HIDE_CURSOR = "\x1B[?25l";
+const SHOW_CURSOR = "\x1B[?25h";
+
+function cleanupAndExit(exitCode: number = 0): void {
+  process.stdout.write(SHOW_CURSOR);
+  process.exit(exitCode);
+}
 
 function displayUsage(): void {
   console.log("\nUsage: node dist/main.js <minutes>");
@@ -42,6 +52,10 @@ function main() {
     process.exit(userRequestedHelp ? 0 : 1);
   }
 
+  process.on("exit", (code) => {
+    process.stdout.write(SHOW_CURSOR);
+  });
+
   try {
     const timer = new Timer(durationMinutes);
 
@@ -52,8 +66,12 @@ function main() {
       process.exit(0);
     });
 
+    process.stdout.write(HIDE_CURSOR);
+
     timer.start();
   } catch (error) {
+    process.stdout.write(SHOW_CURSOR);
+
     if (error instanceof Error) {
       console.error(`Error: ${error.message}`);
     } else {
