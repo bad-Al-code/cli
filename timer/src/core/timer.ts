@@ -1,3 +1,4 @@
+import { off } from "node:process";
 import * as readline from "node:readline";
 
 export class Timer {
@@ -5,6 +6,7 @@ export class Timer {
   private remainingMs: number;
   private intervalId: NodeJS.Timeout | null = null;
   private readonly tickIntervalMs = 1000;
+  private isPaused: boolean = false;
 
   constructor(durationMinutes: number) {
     if (durationMinutes < 0) {
@@ -13,6 +15,7 @@ export class Timer {
 
     this.durationMs = durationMinutes * 60 * 1000;
     this.remainingMs = this.durationMs;
+    this.isPaused = false;
 
     console.log(
       `Timer initialized for ${durationMinutes} minute(s). [${this.durationMs}ms]`
@@ -21,7 +24,11 @@ export class Timer {
 
   private displyTime(): void {
     const formattedTime = this.formatTime(this.remainingMs);
-    const displayString = `Time Remaining: ${formattedTime}`;
+    let displayString = `Time Remaining: ${formattedTime}`;
+
+    if (this.isPaused) {
+      displayString += " (Paused)";
+    }
 
     readline.cursorTo(process.stdout, 0);
     process.stdout.write(displayString);
@@ -44,6 +51,10 @@ export class Timer {
   }
 
   private tick(): void {
+    if (this.isPaused) {
+      return;
+    }
+
     this.remainingMs -= this.tickIntervalMs;
 
     if (this.remainingMs < 0) {
@@ -58,20 +69,65 @@ export class Timer {
   }
 
   public stop(completed: boolean = false): void {
-    if (this.intervalId !== null) {
-      clearInterval(this.intervalId);
-      this.intervalId = null;
+    const wasTicking = this.intervalId !== null;
+    const wasPaused = this.isPaused;
+    const intervalToClear = this.intervalId;
 
+    if (wasTicking && intervalToClear) {
+      clearInterval(intervalToClear);
+    }
+
+    this.intervalId = null;
+    this.isPaused = false;
+
+    if (wasTicking || wasPaused) {
       process.stdout.write("\n");
 
       if (completed) {
-        console.log("Time's up.");
+        console.log("Time's up!");
 
         process.exit(0);
       } else {
         console.log("Timer stopped manually.");
       }
     }
+  }
+
+  public pause(): void {
+    if (this.intervalId === null || this.isPaused) {
+      return;
+    }
+
+    this.isPaused = true;
+    clearInterval(this.intervalId);
+    this.intervalId = null;
+
+    console.log(`
+    \nTimer paused.
+    `);
+
+    this.displyTime();
+  }
+
+  public resume(): void {
+    if (!this.isPaused) {
+      return;
+    }
+
+    if (this.remainingMs <= 0) {
+      console.warn(`Timer cannot be resumed: time already up`);
+
+      return;
+    }
+
+    this.isPaused = false;
+    console.log("\nTimer resumed.");
+
+    this.displyTime();
+
+    this.intervalId = setInterval(() => {
+      this.tick();
+    }, this.tickIntervalMs);
   }
 
   public getRemainingMs(): number {
