@@ -1,13 +1,17 @@
+import { Timer } from "./core/timer";
+
 function displayUsage(): void {
-  console.log("Usage: timer <minutes>");
-  console.log("Example: timer 10");
+  console.log("\nUsage: node dist/main.js <minutes>");
+  console.log("Example: node dist/main.js 10");
+  console.log("\nOr using npm script");
+  console.log("Usage: npm start -- <minutes>");
+  console.log("Example: npm start -- 10\n");
 }
 
 function parseArguments(): number | null {
   const args = process.argv.slice(2);
 
-  if (args.length !== 1) {
-    console.error("Error: Invalid number of arguments.");
+  if (args.length !== 1 || args[0] === "--help" || args[0] === "-h") {
     displayUsage();
 
     return null;
@@ -29,15 +33,30 @@ function parseArguments(): number | null {
 }
 
 function main() {
-  console.log("Timer CLI...");
-
   const durationMinutes = parseArguments();
 
   if (durationMinutes === null) {
-    process.exit(1);
+    const userRequestedHelp = process.argv
+      .slice(2)
+      .some((arg) => arg === "--help" || arg === "-h");
+    process.exit(userRequestedHelp ? 0 : 1);
   }
 
-  console.log(`Timer set for ${durationMinutes} minutes.`);
+  try {
+    const timer = new Timer(durationMinutes);
+
+    timer.start();
+  } catch (error) {
+    if (error instanceof Error) {
+      console.error(`Error: ${error.message}`);
+    } else {
+      console.error(`An unexpected error occured during timer setup. `, error);
+    }
+
+    process.exit(1);
+  }
 }
 
-main();
+if (require.main === module) {
+  main();
+}
