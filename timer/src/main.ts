@@ -45,6 +45,11 @@ function main() {
   try {
     const timer = new Timer(durationMinutes);
 
+    process.on("SIGINT", () => {
+      console.log(`\nCaught interrupt singnal (Ctrl+C).`);
+      timer.stop();
+    });
+
     timer.start();
   } catch (error) {
     if (error instanceof Error) {
