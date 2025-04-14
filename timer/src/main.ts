@@ -2,6 +2,7 @@ import process from "node:process";
 import * as readline from "node:readline";
 
 import { Timer } from "./core/timer";
+import { ArgumentError } from "./errors";
 
 const HIDE_CURSOR = "\x1B[?25l";
 const SHOW_CURSOR = "\x1B[?25h";
@@ -14,25 +15,22 @@ function displayUsage(): void {
   console.log("Example: npm start -- 10\n");
 }
 
-function parseArguments(): number | null {
+function parseArguments(): number {
   const args = process.argv.slice(2);
 
   if (args.length !== 1 || args[0] === "--help" || args[0] === "-h") {
     displayUsage();
 
-    return null;
+    process.exit(0);
   }
 
   const durationArg = args[0];
   const durationMinutes = parseFloat(durationArg);
 
   if (isNaN(durationMinutes) || durationMinutes <= 0) {
-    console.error(
-      `Error: Invalid duration "${durationArg}". Please provide a positive number of minutes.`
+    throw new ArgumentError(
+      `Invalid duration "${durationArg}". Please provide a positive number of minutes.`
     );
-    displayUsage();
-
-    return null;
   }
 
   return durationMinutes;
@@ -85,12 +83,18 @@ function main() {
 
   console.log("Press SPACE or 'p' to pause/resume, 'q' to quit.");
 
-  process.on("exit", (code) => {
+  const performCleanup = () => {
     process.stdout.write(SHOW_CURSOR);
     if (process.stdin.isTTY) {
-      process.stdin.setRawMode(false);
+      try {
+        process.stdin.setRawMode(false);
+      } catch (e) {
+        // Ignore errors during cleanup, e.g., if stdin closed unexpectedly
+      }
     }
-  });
+  };
+
+  process.on("exit", performCleanup);
 
   try {
     let timer: Timer | null = null;
@@ -114,19 +118,21 @@ function main() {
 
     timer.start();
   } catch (error) {
-    if (process.stdin.isTTY) {
-      process.stdin.setRawMode(false);
-    }
+    performCleanup();
 
-    process.stdout.write(SHOW_CURSOR);
+    console.error("\n--- Error ---");
 
-    if (error instanceof Error) {
-      console.error(`Error: ${error.message}`);
+    if (error instanceof ArgumentError) {
+      console.error(`Configuration Error: ${error.message}`);
+      process.exitCode = 1;
+    } else if (error instanceof Error) {
+      console.error(`Runtime Error: ${error.message}`);
+      process.exitCode = 2;
     } else {
-      console.error(`An unexpected error occured during timer setup. `, error);
+      console.error("An unexpected issue occurred:", error);
+      process.exitCode = 3;
     }
-
-    process.exit(1);
+    console.error("-------------\n");
   }
 }
 

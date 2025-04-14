@@ -1,5 +1,6 @@
-import { throws } from "node:assert";
 import * as readline from "node:readline";
+
+import { TimerConfigError } from "../errors";
 
 export class Timer {
   private readonly durationMs: number;
@@ -13,7 +14,7 @@ export class Timer {
 
   constructor(durationMinutes: number) {
     if (durationMinutes < 0) {
-      throw new Error("Timer duration must be a positive number.");
+      throw new TimerConfigError("Timer duration must be a positive number.");
     }
 
     this.durationMs = durationMinutes * 60 * 1000;
