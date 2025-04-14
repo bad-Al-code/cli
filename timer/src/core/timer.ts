@@ -58,7 +58,7 @@ export class Timer {
     if (this.remainingMs <= 0) {
       this.remainingMs = 0;
       this.logRemainingTime();
-      this.stop();
+      this.stop(true);
     } else {
       this.logRemainingTime();
     }
