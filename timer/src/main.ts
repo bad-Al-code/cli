@@ -5,11 +5,6 @@ import { Timer } from "./core/timer";
 const HIDE_CURSOR = "\x1B[?25l";
 const SHOW_CURSOR = "\x1B[?25h";
 
-function cleanupAndExit(exitCode: number = 0): void {
-  process.stdout.write(SHOW_CURSOR);
-  process.exit(exitCode);
-}
-
 function displayUsage(): void {
   console.log("\nUsage: node dist/main.js <minutes>");
   console.log("Example: node dist/main.js 10");
@@ -28,7 +23,7 @@ function parseArguments(): number | null {
   }
 
   const durationArg = args[0];
-  const durationMinutes = Number(durationArg);
+  const durationMinutes = parseFloat(durationArg);
 
   if (isNaN(durationMinutes) || durationMinutes <= 0) {
     console.error(
