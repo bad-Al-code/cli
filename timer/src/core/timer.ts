@@ -1,16 +1,12 @@
-import * as readline from "node:readline";
-
 import { TimerConfigError } from "../errors";
+import { updateDisplay } from "../ui";
 
 export class Timer {
   private readonly durationMs: number;
   private remainingMs: number;
   private intervalId: NodeJS.Timeout | null = null;
   private readonly tickIntervalMs = 1000;
-  private isPaused: boolean = false;
-  private readonly progressBarLength = 20;
-  private readonly progressCharFilled = "█";
-  private readonly progressCharEmpty = "░";
+  isPaused: boolean = false;
 
   constructor(durationMinutes: number) {
     if (durationMinutes < 0) {
@@ -20,54 +16,14 @@ export class Timer {
     this.durationMs = durationMinutes * 60 * 1000;
     this.remainingMs = this.durationMs;
     this.isPaused = false;
-
-    console.log(
-      `Timer initialized for ${durationMinutes} minute(s). [${this.durationMs}ms]`
-    );
-  }
-
-  private displyTime(): void {
-    const formattedTime = this.formatTime(this.remainingMs);
-    let displayString = `Time Remaining: ${formattedTime}`;
-
-    let progressPercentage = 0;
-    if (this.durationMs > 0) {
-      const elapsedMs = Math.min(
-        this.durationMs,
-        this.durationMs - this.remainingMs
-      );
-      progressPercentage = elapsedMs / this.durationMs;
-    }
-
-    const filledChars = Math.round(progressPercentage * this.progressBarLength);
-    const emptyChars = this.progressBarLength - filledChars;
-
-    const progressBar =
-      "[" +
-      this.progressCharFilled.repeat(filledChars) +
-      this.progressCharEmpty.repeat(emptyChars) +
-      "]";
-
-    displayString += ` ${progressBar}`;
-
-    if (this.isPaused) {
-      displayString += " (Paused)";
-    }
-
-    readline.cursorTo(process.stdout, 0);
-    process.stdout.write(displayString);
-    readline.clearLine(process.stdout, 1);
   }
 
   public start(): void {
     if (this.intervalId !== null) {
-      console.warn("Timer is already running.");
       return;
     }
 
-    console.log("Timer starting...");
-
-    this.displyTime();
+    updateDisplay(this.remainingMs, this.durationMs, this.isPaused);
 
     this.intervalId = setInterval(() => {
       this.tick();
@@ -85,7 +41,7 @@ export class Timer {
       this.remainingMs = 0;
     }
 
-    this.displyTime();
+    updateDisplay(this.remainingMs, this.durationMs, this.isPaused);
 
     if (this.remainingMs === 0) {
       this.stop(true);
@@ -105,14 +61,11 @@ export class Timer {
     this.isPaused = false;
 
     if (wasTicking || wasPaused) {
-      process.stdout.write("\n");
+      // process.stdout.write("\n");
 
       if (completed) {
-        console.log("Time's up!");
-
         process.exit(0);
       } else {
-        console.log("Timer stopped manually.");
       }
     }
   }
@@ -130,7 +83,7 @@ export class Timer {
     \nTimer paused.
     `);
 
-    this.displyTime();
+    updateDisplay(this.remainingMs, this.durationMs, this.isPaused);
   }
 
   public resume(): void {
@@ -147,7 +100,7 @@ export class Timer {
     this.isPaused = false;
     console.log("\nTimer resumed.");
 
-    this.displyTime();
+    updateDisplay(this.remainingMs, this.durationMs, this.isPaused);
 
     this.intervalId = setInterval(() => {
       this.tick();
@@ -164,23 +117,5 @@ export class Timer {
 
   public getRemainingMs(): number {
     return this.remainingMs;
-  }
-
-  private logRemainingTime(): void {
-    const formattedTime = this.formatTime(this.remainingMs);
-    console.log(`Remaining:${formattedTime}`);
-  }
-
-  private formatTime(ms: number): string {
-    if (ms < 0) ms = 0;
-
-    const totalSeconds = Math.ceil(ms / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-
-    const paddedMinutes = String(minutes).padStart(2, "0");
-    const paddedSeconds = String(seconds).padStart(2, "0");
-
-    return `${paddedMinutes}:${paddedSeconds}`;
   }
 }
