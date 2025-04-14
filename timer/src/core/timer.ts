@@ -1,3 +1,4 @@
+import { throws } from "node:assert";
 import * as readline from "node:readline";
 
 export class Timer {
@@ -6,6 +7,9 @@ export class Timer {
   private intervalId: NodeJS.Timeout | null = null;
   private readonly tickIntervalMs = 1000;
   private isPaused: boolean = false;
+  private readonly progressBarLength = 20;
+  private readonly progressCharFilled = "█";
+  private readonly progressCharEmpty = "░";
 
   constructor(durationMinutes: number) {
     if (durationMinutes < 0) {
@@ -24,6 +28,26 @@ export class Timer {
   private displyTime(): void {
     const formattedTime = this.formatTime(this.remainingMs);
     let displayString = `Time Remaining: ${formattedTime}`;
+
+    let progressPercentage = 0;
+    if (this.durationMs > 0) {
+      const elapsedMs = Math.min(
+        this.durationMs,
+        this.durationMs - this.remainingMs
+      );
+      progressPercentage = elapsedMs / this.durationMs;
+    }
+
+    const filledChars = Math.round(progressPercentage * this.progressBarLength);
+    const emptyChars = this.progressBarLength - filledChars;
+
+    const progressBar =
+      "[" +
+      this.progressCharFilled.repeat(filledChars) +
+      this.progressCharEmpty.repeat(emptyChars) +
+      "]";
+
+    displayString += ` ${progressBar}`;
 
     if (this.isPaused) {
       displayString += " (Paused)";
