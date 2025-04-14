@@ -1,4 +1,3 @@
-import { off } from "node:process";
 import * as readline from "node:readline";
 
 export class Timer {
@@ -128,6 +127,14 @@ export class Timer {
     this.intervalId = setInterval(() => {
       this.tick();
     }, this.tickIntervalMs);
+  }
+
+  public togglePauseResume(): void {
+    if (this.isPaused) {
+      this.resume();
+    } else if (this.intervalId !== null) {
+      this.pause();
+    }
   }
 
   public getRemainingMs(): number {
