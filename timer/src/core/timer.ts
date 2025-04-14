@@ -1,4 +1,4 @@
-import { throws } from "assert";
+import * as readline from "node:readline";
 
 export class Timer {
   private readonly durationMs: number;
@@ -19,6 +19,15 @@ export class Timer {
     );
   }
 
+  private displyTime(): void {
+    const formattedTime = this.formatTime(this.remainingMs);
+    const displayString = `Time Remaining: ${formattedTime}`;
+
+    readline.cursorTo(process.stdout, 0);
+    process.stdout.write(displayString);
+    readline.clearLine(process.stdout, 1);
+  }
+
   public start(): void {
     if (this.intervalId !== null) {
       console.warn("Timer is already running.");
@@ -27,11 +36,46 @@ export class Timer {
 
     console.log("Timer starting...");
 
-    this.logRemainingTime();
+    this.displyTime();
 
     this.intervalId = setInterval(() => {
       this.tick();
     }, this.tickIntervalMs);
+  }
+
+  private tick(): void {
+    this.remainingMs -= this.tickIntervalMs;
+
+    if (this.remainingMs < 0) {
+      this.remainingMs = 0;
+    }
+
+    this.displyTime();
+
+    if (this.remainingMs === 0) {
+      this.stop(true);
+    }
+  }
+
+  public stop(completed: boolean = false): void {
+    if (this.intervalId !== null) {
+      clearInterval(this.intervalId);
+      this.intervalId = null;
+
+      process.stdout.write("\n");
+
+      if (completed) {
+        console.log("Time's up.");
+
+        process.exit(0);
+      } else {
+        console.log("Timer stopped manually.");
+      }
+    }
+  }
+
+  public getRemainingMs(): number {
+    return this.remainingMs;
   }
 
   private logRemainingTime(): void {
@@ -50,36 +94,5 @@ export class Timer {
     const paddedSeconds = String(seconds).padStart(2, "0");
 
     return `${paddedMinutes}:${paddedSeconds}`;
-  }
-
-  private tick(): void {
-    this.remainingMs -= this.tickIntervalMs;
-
-    if (this.remainingMs <= 0) {
-      this.remainingMs = 0;
-      this.logRemainingTime();
-      this.stop(true);
-    } else {
-      this.logRemainingTime();
-    }
-  }
-
-  public stop(completed: boolean = false): void {
-    if (this.intervalId !== null) {
-      clearInterval(this.intervalId);
-      this.intervalId = null;
-
-      if (completed) {
-        console.log("Time's up.");
-
-        process.exit(0);
-      } else {
-        console.log("Timer stopped manually.");
-      }
-    }
-  }
-
-  public getRemainingMs(): number {
-    return this.remainingMs;
   }
 }

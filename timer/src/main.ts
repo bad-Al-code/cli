@@ -47,7 +47,9 @@ function main() {
 
     process.on("SIGINT", () => {
       console.log(`\nCaught interrupt singnal (Ctrl+C).`);
-      timer.stop();
+      timer.stop(false);
+
+      process.exit(0);
     });
 
     timer.start();
