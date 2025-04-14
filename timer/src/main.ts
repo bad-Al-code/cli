@@ -2,7 +2,6 @@ import process from "node:process";
 import * as readline from "node:readline";
 
 import { Timer } from "./core/timer";
-import { privateDecrypt } from "node:crypto";
 
 const HIDE_CURSOR = "\x1B[?25l";
 const SHOW_CURSOR = "\x1B[?25h";
@@ -60,10 +59,6 @@ function setupInputListener(timer: Timer): void {
       shift: boolean;
     }
   ) => {
-    if (key.ctrl && (key.name === "c" || key.name === "d")) {
-      return;
-    }
-
     if (key.name === "space" || key.name === "p") {
       timer.togglePauseResume();
     }
@@ -76,17 +71,6 @@ function setupInputListener(timer: Timer): void {
   };
 
   process.stdin.on("keypress", handleKeyPress);
-  process.on("exit", () => {
-    if (process.stdin.isTTY) {
-      process.stdin.setRawMode(false);
-    }
-  });
-
-  process.on("SIGINT", () => {
-    if (process.stdin.isTTY) {
-      process.stdin.setRawMode(false);
-    }
-  });
 }
 
 function main() {
@@ -99,9 +83,7 @@ function main() {
     process.exit(userRequestedHelp ? 0 : 1);
   }
 
-  console.log(
-    "Press SPACE or 'p' to pause/resume, 'q' to quit, Ctrl+C to exit."
-  );
+  console.log("Press SPACE or 'p' to pause/resume, 'q' to quit.");
 
   process.on("exit", (code) => {
     process.stdout.write(SHOW_CURSOR);
@@ -111,15 +93,18 @@ function main() {
   });
 
   try {
-    const timer = new Timer(durationMinutes);
+    let timer: Timer | null = null;
+    timer = new Timer(durationMinutes);
 
     process.on("SIGINT", () => {
       if (process.stdin.isTTY) {
         process.stdin.setRawMode(false);
       }
-      console.log(`\nCaught interrupt singnal (Ctrl+C).`);
-      timer.stop(false);
 
+      console.log(`\nCaught interrupt signal (Ctrl+C).`);
+      if (typeof timer !== "undefined" && timer) {
+        timer.stop(false);
+      }
       process.exit(0);
     });
 
